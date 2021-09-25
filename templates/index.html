@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Badminton Groups</title>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    {% for group in groups %}
+    <h2>{{ group["date"] }}</h2>
+    <div>{{ group["location"] }}</div>
+    <div>{{ group["start_time"] }} - {{ group["end_time"]}}</div>
+
+    <h3>Double ({{ group["double_limit"] }})</h3>
+    <ol>
+      {% for player in group["double_players"] %}
+      <li>{{ player["name"] }}</li>
+      {% endfor %}
+    </ol>
+
+    <h5>Waitlist</h5>
+    <ol>
+      {% for player in group["double_waitlist"] %}
+      <li>{{ player["name"] }}</li>
+      {% endfor %}
+    </ol>
+
+    <h3>Single ({{ group["single_limit"] }})</h3>
+    <ol>
+      {% for player in group["single_players"] %}
+      <li>{{ player["name"] }}</li>
+      {% endfor %}
+    </ol>
+
+    <h5>Waitlist</h5>
+    <ol>
+      {% for player in group["single_waitlist"] %}
+      <li>{{ player["name"] }}</li>
+      {% endfor %}
+    </ol>
+
+    {% endfor %}
+  </body>
+</html>
