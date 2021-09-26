@@ -19,3 +19,4 @@
 
 - [GCP Console](https://console.cloud.google.com/home/dashboard?project=badminton-group)
 - [Quickstart for Python 3 in the App Engine Standard Environment](https://cloud.google.com/appengine/docs/standard/python3/quickstart)
+- [Python Client for Google Cloud Datastore](https://googleapis.dev/python/datastore/latest/index.html)
