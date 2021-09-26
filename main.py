@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Iterator, List, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 from datetime import datetime
 from operator import itemgetter
 import pytz
@@ -13,21 +13,31 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(32)
 
 
-class JoinForm(Form):
+class EditForm(Form):
     player_type = RadioField(
         validators=[validators.DataRequired()],
         choices=[("double", "Double"), ("single", "Single")],
         default="double",
     )
     player_name = StringField(validators=[validators.DataRequired()])
-    join_submit = SubmitField("Join")
-    leave_submit = SubmitField("Leave")
+    add_submit = SubmitField("Add")
+    remove_submit = SubmitField("Remove")
 
 
 def fetch_groups(limit: int = None) -> Iterator:
     query = datastore_client.query(kind="group")
     query.order = ["-start_time"]
     return query.fetch(limit=limit)
+
+
+def fetch_group(
+    group_id: str, transaction: datastore.Transaction = None
+) -> Optional[datastore.Entity]:
+    key = datastore_client.key("group", int(group_id))
+    group_entity = datastore_client.get(key, transaction=transaction)
+    if not group_entity:
+        print(f"Cannot find group eneity with key {key}")
+    return group_entity
 
 
 def process_groups(groups: Iterator) -> Iterator[Dict]:
@@ -91,51 +101,64 @@ def get_clean_data(
             yield item
 
 
-def process_join(group_id: int, player_type: str, player_name: str):
-    new_player = {"name": player_name, "signup_time": datetime.utcnow()}
-    with datastore_client.transaction():
-        key = datastore_client.key("group", group_id)
-        group_entity = datastore_client.get(key)
+def get_player_list_name_by_type(player_type: str) -> str:
+    if player_type == "double":
+        return "double_players"
+    elif player_type == "single":
+        return "single_players"
+
+
+def process_add(group_id: str, player_type: str, player_name: str) -> None:
+    with datastore_client.transaction() as transaction:
+        group_entity = fetch_group(group_id, transaction=transaction)
         if not group_entity:
-            print(f"Cannot find group eneity with key {key}")
             return
-        if player_type == "double":
-            if player_name in {x["name"] for x in group_entity["double_players"]}:
-                print("Player with the same name already exist!")
-            else:
-                group_entity["double_players"].append(new_player)
-        elif player_type == "single":
-            if player_name in {x["name"] for x in group_entity["single_players"]}:
-                print("Player with the same name already exist!")
-            else:
-                group_entity["single_players"].append(new_player)
-        datastore_client.put(group_entity)
+        player_list_name = get_player_list_name_by_type(player_type)
+        if player_name in {x["name"] for x in group_entity[player_list_name]}:
+            print("Player with the same name already exist!")
+        else:
+            group_entity[player_list_name].append(
+                {"name": player_name, "signup_time": datetime.utcnow()}
+            )
+            datastore_client.put(group_entity)
 
 
-def process_leave(group: Dict, player_type: str, player_name: str):
-    pass
+def process_remove(group_id: str, player_type: str, player_name: str):
+    with datastore_client.transaction() as transaction:
+        group_entity = fetch_group(group_id, transaction=transaction)
+        if not group_entity:
+            return
+        player_list_name = get_player_list_name_by_type(player_type)
+        new_players = [
+            x for x in group_entity[player_list_name] if x["name"] != player_name
+        ]
+        if new_players == group_entity[player_list_name]:
+            print("Cannot find player with that name")
+        else:
+            group_entity[player_list_name] = new_players
+            datastore_client.put(group_entity)
 
 
 @app.route("/", methods=["GET"])
 def root():
     groups = fetch_groups(10)
     processed_groups = list(process_groups(groups))
-    join_form = JoinForm()
-    return render_template("index.html", groups=processed_groups, join_form=join_form)
+    edit_form = EditForm()
+    return render_template("index.html", groups=processed_groups, edit_form=edit_form)
 
 
 @app.route("/", methods=["POST"])
 def root_post():
     if all(x in request.form for x in ["group_id", "player_type", "player_name"]):
-        if "join_submit" in request.form:
-            process_join(
-                int(request.form["group_id"]),
+        if "add_submit" in request.form:
+            process_add(
+                request.form["group_id"],
                 request.form["player_type"],
                 request.form["player_name"],
             )
-        elif "leave_submit" in request.form:
-            process_leave(
-                int(request.form["group_id"]),
+        elif "remove_submit" in request.form:
+            process_remove(
+                request.form["group_id"],
                 request.form["player_type"],
                 request.form["player_name"],
             )

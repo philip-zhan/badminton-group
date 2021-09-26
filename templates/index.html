@@ -43,12 +43,12 @@
     </ol>
     {% endif %}
 
-    <h3>Join / Leave</h3>
+    <h3>Add / Remove</h3>
     <form method="POST">
-        {{ join_form.player_type }}
-        {{ join_form.player_name }}
-        {{ join_form.join_submit }}
-        <!-- {{ join_form.leave_submit }} -->
+        {{ edit_form.player_type }}
+        {{ edit_form.player_name }}
+        {{ edit_form.add_submit }}
+        {{ edit_form.remove_submit }}
         <input type="hidden" name="group_id" value="{{group['id']}}">
     </form>
     
