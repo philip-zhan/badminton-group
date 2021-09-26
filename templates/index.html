@@ -18,12 +18,14 @@
       {% endfor %}
     </ol>
 
+    {% if group["double_waitlist"] %}
     <h5>Waitlist</h5>
     <ol>
       {% for player in group["double_waitlist"] %}
       <li>{{ player["name"] }}</li>
       {% endfor %}
     </ol>
+    {% endif %}
 
     <h3>Single ({{ group["single_limit"] }})</h3>
     <ol>
@@ -32,13 +34,24 @@
       {% endfor %}
     </ol>
 
+    {% if group["single_waitlist"] %}
     <h5>Waitlist</h5>
     <ol>
       {% for player in group["single_waitlist"] %}
       <li>{{ player["name"] }}</li>
       {% endfor %}
     </ol>
+    {% endif %}
 
+    <h3>Join / Leave</h3>
+    <form method="POST">
+        {{ join_form.player_type }}
+        {{ join_form.player_name }}
+        {{ join_form.join_submit }}
+        <!-- {{ join_form.leave_submit }} -->
+        <input type="hidden" name="group_id" value="{{group['id']}}">
+    </form>
+    
     {% endfor %}
   </body>
 </html>

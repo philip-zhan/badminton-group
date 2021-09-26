@@ -1,12 +1,27 @@
+import os
 from typing import Dict, Iterator, List, Set, Tuple
 from datetime import datetime
 from operator import itemgetter
 import pytz
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+from wtforms import Form, StringField, SubmitField, RadioField, validators
 from google.cloud import datastore
+
 
 datastore_client = datastore.Client("badminton-group", "groups")
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.urandom(32)
+
+
+class JoinForm(Form):
+    player_type = RadioField(
+        validators=[validators.DataRequired()],
+        choices=[("double", "Double"), ("single", "Single")],
+        default="double",
+    )
+    player_name = StringField(validators=[validators.DataRequired()])
+    join_submit = SubmitField("Join")
+    leave_submit = SubmitField("Leave")
 
 
 def fetch_groups(limit: int = None) -> Iterator:
@@ -42,6 +57,7 @@ def process_groups(groups: Iterator) -> Iterator[Dict]:
             group["double_players"], group["double_limit"]
         )
         yield {
+            "id": group.id,
             "location": group["location"],
             "date": start_time_local.strftime("%a %b %-d"),
             "start_time": start_time_local.strftime("%-I:%M %p"),
@@ -65,7 +81,7 @@ def process_players(players: List, limit: int) -> Tuple[List, List]:
 
 
 def get_clean_data(
-    data: List[Dict], required_field_and_type: Set[Tuple[str, str]]
+    data: Iterator, required_field_and_type: Set[Tuple[str, str]]
 ) -> Iterator[Dict]:
     for item in data:
         if all(
@@ -75,11 +91,55 @@ def get_clean_data(
             yield item
 
 
-@app.route("/")
+def process_join(group_id: int, player_type: str, player_name: str):
+    new_player = {"name": player_name, "signup_time": datetime.utcnow()}
+    with datastore_client.transaction():
+        key = datastore_client.key("group", group_id)
+        group_entity = datastore_client.get(key)
+        if not group_entity:
+            print(f"Cannot find group eneity with key {key}")
+            return
+        if player_type == "double":
+            if player_name in {x["name"] for x in group_entity["double_players"]}:
+                print("Player with the same name already exist!")
+            else:
+                group_entity["double_players"].append(new_player)
+        elif player_type == "single":
+            if player_name in {x["name"] for x in group_entity["single_players"]}:
+                print("Player with the same name already exist!")
+            else:
+                group_entity["single_players"].append(new_player)
+        datastore_client.put(group_entity)
+
+
+def process_leave(group: Dict, player_type: str, player_name: str):
+    pass
+
+
+@app.route("/", methods=["GET"])
 def root():
     groups = fetch_groups(10)
-    processed_groups = process_groups(groups)
-    return render_template("index.html", groups=processed_groups)
+    processed_groups = list(process_groups(groups))
+    join_form = JoinForm()
+    return render_template("index.html", groups=processed_groups, join_form=join_form)
+
+
+@app.route("/", methods=["POST"])
+def root_post():
+    if all(x in request.form for x in ["group_id", "player_type", "player_name"]):
+        if "join_submit" in request.form:
+            process_join(
+                int(request.form["group_id"]),
+                request.form["player_type"],
+                request.form["player_name"],
+            )
+        elif "leave_submit" in request.form:
+            process_leave(
+                int(request.form["group_id"]),
+                request.form["player_type"],
+                request.form["player_name"],
+            )
+    return root()
 
 
 if __name__ == "__main__":
