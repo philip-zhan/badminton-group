@@ -52,7 +52,7 @@ def fetch_group(
     return group_entity
 
 
-def process_create_group(data:dict) ->None:
+def process_create_group(data:dict) ->  str:
     new_group = datastore.Entity(datastore_client.key("group"))
     local = pytz.timezone("US/Pacific")
     start_time = local.localize(datetime.strptime(data['date']+" "+data['start_time'],'%Y-%m-%d %H:%M'))
@@ -69,6 +69,7 @@ def process_create_group(data:dict) ->None:
         })
     print(new_group)
     datastore_client.put(new_group)
+    return str(new_group.id)
         
 
 def process_groups(groups: Iterator) -> Iterator[Dict]:
@@ -146,7 +147,7 @@ def process_add(group_id: str, player_type: str, player_name: str) -> None:
         if not group_entity:
             return
         player_list_name = get_player_list_name_by_type(player_type)
-        if player_name in {x["name"] for x in group_entity[player_list_name]}:
+        if player_name.lower() in {x["name"].lower() for x in group_entity[player_list_name]}:
             print("Player with the same name already exist!")
         else:
             group_entity[player_list_name].append(
@@ -162,7 +163,7 @@ def process_remove(group_id: str, player_type: str, player_name: str):
             return
         player_list_name = get_player_list_name_by_type(player_type)
         new_players = [
-            x for x in group_entity[player_list_name] if x["name"] != player_name
+            x for x in group_entity[player_list_name] if x["name"].lower() != player_name.lower()
         ]
         if new_players == group_entity[player_list_name]:
             print("Cannot find player with that name")
@@ -170,17 +171,25 @@ def process_remove(group_id: str, player_type: str, player_name: str):
             group_entity[player_list_name] = new_players
             datastore_client.put(group_entity)
 
-
 @app.route("/", methods=["GET"])
 def root():
-    groups = fetch_groups(10)
+    groups = fetch_groups()
     processed_groups = list(process_groups(groups))
     edit_form = EditForm()
     return render_template("index.html", groups=processed_groups, edit_form=edit_form)
 
 
-@app.route("/", methods=["POST"])
-def root_post():
+
+@app.route("/<string:gid>", methods=["GET"])
+def group(gid):
+    groups = [fetch_group(gid)]
+    processed_groups = list(process_groups(groups))
+    edit_form = EditForm()
+    return render_template("group.html", group=processed_groups[0], edit_form=edit_form)
+
+
+@app.route("/<string:gid>", methods=["POST"])
+def group_post(gid):
     if all(x in request.form for x in ["group_id", "player_type", "player_name"]):
         if "add_submit" in request.form:
             process_add(
@@ -194,7 +203,7 @@ def root_post():
                 request.form["player_type"],
                 request.form["player_name"],
             )
-    return root()
+    return redirect("/"+gid,302)
 
 @app.route("/groups/new", methods=["GET"])
 def create_group():
@@ -205,8 +214,8 @@ def create_group():
 @app.route("/groups", methods=["POST"])
 def create_group_post():
     print(request.form)
-    process_create_group(request.form)
-    return redirect("/",302)
+    gid = process_create_group(request.form)
+    return redirect("/"+gid,302)
 
 
 if __name__ == "__main__":
