@@ -1,5 +1,7 @@
 # Badminton Group Tool
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4989b916b6fe413687a698631373e239)](https://app.codacy.com/gh/philip-zhan/badminton-group?utm_source=github.com&utm_medium=referral&utm_content=philip-zhan/badminton-group&utm_campaign=Badge_Grade_Settings)
+
 ## Prerequisites
 
 - [Python3](https://www.python.org/downloads/) (currently tested with version 3.9.5)
