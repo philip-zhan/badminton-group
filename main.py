@@ -1,10 +1,12 @@
 import os
 from typing import Dict, Iterator, List, Optional, Set, Tuple
-from datetime import datetime
+from datetime import datetime,date
 from operator import itemgetter
 import pytz
 from flask import Flask, render_template, request
+from werkzeug.utils import redirect
 from wtforms import Form, StringField, SubmitField, RadioField, validators
+from wtforms.fields.html5 import TimeField, DateField, IntegerField
 from google.cloud import datastore
 
 
@@ -23,6 +25,16 @@ class EditForm(Form):
     add_submit = SubmitField("Add")
     remove_submit = SubmitField("Remove")
 
+class GroupForm(Form):
+    location = StringField(validators=[validators.DataRequired()])
+    date = DateField(validators=[validators.DataRequired()],default=date.today)
+    start_time = TimeField(validators=[validators.DataRequired()])
+    end_time = TimeField(validators=[validators.DataRequired()])
+    single_limit = IntegerField(validators=[validators.DataRequired()])
+    double_limit = IntegerField(validators=[validators.DataRequired()])
+    create_submit = SubmitField("Create")
+
+
 
 def fetch_groups(limit: int = None) -> Iterator:
     query = datastore_client.query(kind="group")
@@ -36,9 +48,28 @@ def fetch_group(
     key = datastore_client.key("group", int(group_id))
     group_entity = datastore_client.get(key, transaction=transaction)
     if not group_entity:
-        print(f"Cannot find group eneity with key {key}")
+        print(f"Cannot find group entity with key {key}")
     return group_entity
 
+
+def process_create_group(data:dict) ->None:
+    new_group = datastore.Entity(datastore_client.key("group"))
+    local = pytz.timezone("US/Pacific")
+    start_time = local.localize(datetime.strptime(data['date']+" "+data['start_time'],'%Y-%m-%d %H:%M'))
+    end_time = local.localize(datetime.strptime(data['date']+" "+data['end_time'],'%Y-%m-%d %H:%M'))
+    new_group.update(
+        {
+            "location": data['location'],
+            "start_time": start_time,
+            "end_time": end_time,
+            "single_limit": int(data['single_limit']),
+            "double_limit": int(data['double_limit']),
+            "single_players": [],
+            "double_players": [],
+        })
+    print(new_group)
+    datastore_client.put(new_group)
+        
 
 def process_groups(groups: Iterator) -> Iterator[Dict]:
     clean_groups = get_clean_data(
@@ -88,6 +119,7 @@ def process_players(players: List, limit: int) -> Tuple[List, List]:
         return sorted_players, []
     else:
         return sorted_players[:limit], sorted_players[limit:]
+
 
 
 def get_clean_data(
@@ -163,6 +195,18 @@ def root_post():
                 request.form["player_name"],
             )
     return root()
+
+@app.route("/groups/new", methods=["GET"])
+def create_group():
+    create_form = GroupForm()
+
+    return render_template("create_group.html",form=create_form)
+
+@app.route("/groups", methods=["POST"])
+def create_group_post():
+    print(request.form)
+    process_create_group(request.form)
+    return redirect("/",302)
 
 
 if __name__ == "__main__":
