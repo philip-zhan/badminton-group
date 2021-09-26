@@ -188,7 +188,15 @@ def root():
     return render_template("index.html", groups=processed_groups, edit_form=edit_form)
 
 
-@app.route("/<string:gid>", methods=["GET"])
+@app.route("/groups/new", methods=["GET"])
+def create_group():
+    create_form = GroupForm()
+
+    return render_template("create_group.html", form=create_form)
+
+
+
+@app.route("/groups/<string:gid>", methods=["GET"])
 def group(gid):
     groups = [fetch_group(gid)]
     processed_groups = list(process_groups(groups))
@@ -196,7 +204,7 @@ def group(gid):
     return render_template("group.html", group=processed_groups[0], edit_form=edit_form)
 
 
-@app.route("/<string:gid>", methods=["POST"])
+@app.route("/groups/<string:gid>", methods=["POST"])
 def group_post(gid):
     if all(x in request.form for x in ["group_id", "player_type", "player_name"]):
         if "add_submit" in request.form:
@@ -211,21 +219,14 @@ def group_post(gid):
                 request.form["player_type"],
                 request.form["player_name"],
             )
-    return redirect("/"+gid, 302)
-
-
-@app.route("/groups/new", methods=["GET"])
-def create_group():
-    create_form = GroupForm()
-
-    return render_template("create_group.html", form=create_form)
+    return redirect("/groups/"+gid, 302)
 
 
 @app.route("/groups", methods=["POST"])
 def create_group_post():
     print(request.form)
     gid = process_create_group(request.form)
-    return redirect("/"+gid, 302)
+    return redirect("/groups/"+gid, 302)
 
 
 @app.route('/favicon.ico')
