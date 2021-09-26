@@ -24,3 +24,7 @@ ul li {
   width: 70px;
   margin-left: 15px;
 }
+#flashes {
+  background-color: #ffaaaa;
+  padding: 10px;
+}

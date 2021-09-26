@@ -1,34 +1,27 @@
-<!DOCTYPE html>
-<html>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <head>
-    <title>Badminton Groups</title>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-  </head>
-  <body>
-  
-    <h3>Add Group</h3>
-    <form method="POST" action="/groups">
-        Location:
-        {{ form.location }}
-        <br>
-        Date: 
-        {{ form.date }}
-        <br>
-        Start time: 
-        {{ form.start_time }}
-        <br>
-        End time: 
-        {{ form.end_time }}
-        <br>
-        Single players limit:
-        {{ form.single_limit }}
-        <br>
-        Double players limit:
-        {{ form.double_limit }}
-        <br>
-        {{ form.create_submit }}
-    </form>    
-  </body>
-</html>
+{% extends "layout.html" %}
+{% block body %}
+
+<h3>Add Group</h3>
+<form method="POST" action="/groups">
+  Location:
+  {{ form.location }}
+  <br>
+  Date:
+  {{ form.date }}
+  <br>
+  Start time:
+  {{ form.start_time }}
+  <br>
+  End time:
+  {{ form.end_time }}
+  <br>
+  Single players limit:
+  {{ form.single_limit }}
+  <br>
+  Double players limit:
+  {{ form.double_limit }}
+  <br>
+  {{ form.create_submit }}
+</form>
+
+{% endblock %}
