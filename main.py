@@ -79,7 +79,6 @@ def process_create_group(data: dict) -> str:
             "double_players": [],
         }
     )
-    print(new_group)
     datastore_client.put(new_group)
     return str(new_group.id)
 
@@ -236,7 +235,6 @@ def group_post(gid):
 
 @app.route("/groups", methods=["POST"])
 def create_group_post():
-    print(request.form)
     gid = process_create_group(request.form)
     return redirect("/groups/" + gid, 302)
 
