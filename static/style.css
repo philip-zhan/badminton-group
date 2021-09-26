@@ -1,3 +1,26 @@
 body {
   font-family: "helvetica", sans-serif;
+  margin: 20px;
+}
+ul {
+  list-style-type: none;
+  padding-left: 0px;
+}
+ul li {
+  display: inline;
+  margin-right: 10px;
+}
+#player_name {
+  height: 25px;
+  width: 150px;
+  margin-bottom: 15px;
+}
+#add_submit {
+  height: 30px;
+  width: 70px;
+}
+#remove_submit {
+  height: 30px;
+  width: 70px;
+  margin-left: 15px;
 }

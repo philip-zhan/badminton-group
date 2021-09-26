@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <head>
     <title>Badminton Groups</title>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
@@ -47,6 +48,7 @@
     <form method="POST">
         {{ edit_form.player_type }}
         {{ edit_form.player_name }}
+        <br>
         {{ edit_form.add_submit }}
         {{ edit_form.remove_submit }}
         <input type="hidden" name="group_id" value="{{group['id']}}">
