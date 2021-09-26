@@ -7,6 +7,9 @@
     <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
+
+    <H1> Current events</H1>
+
     {% for group in groups %}
 
     <h2>{{ group["date"] }}</h2>
@@ -14,6 +17,9 @@
     <div><a href='/{{ group["id"] }}''>{{ group["start_time"] }} - {{ group["end_time"]}}</a></div>
 
     {% endfor %}
-    
+
+    <H1><a href='/groups/new'>Create New Event</a></H1>
+
+
   </body>
 </html>

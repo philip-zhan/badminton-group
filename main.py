@@ -1,6 +1,7 @@
 import os
+from flask import send_from_directory
 from typing import Dict, Iterator, List, Optional, Set, Tuple
-from datetime import datetime,date
+from datetime import datetime, date
 from operator import itemgetter
 import pytz
 from flask import Flask, render_template, request
@@ -25,15 +26,20 @@ class EditForm(Form):
     add_submit = SubmitField("Add")
     remove_submit = SubmitField("Remove")
 
+
 class GroupForm(Form):
     location = StringField(validators=[validators.DataRequired()])
-    date = DateField(validators=[validators.DataRequired()],default=date.today)
-    start_time = TimeField(validators=[validators.DataRequired()])
-    end_time = TimeField(validators=[validators.DataRequired()])
-    single_limit = IntegerField(validators=[validators.DataRequired()])
-    double_limit = IntegerField(validators=[validators.DataRequired()])
+    date = DateField(
+        validators=[validators.DataRequired()], default=date.today)
+    start_time = TimeField(validators=[validators.DataRequired(
+    )], format='%H:%M', default=datetime(2019, 1, 1, hour=20, minute=00))
+    end_time = TimeField(validators=[validators.DataRequired(
+    )], format='%H:%M', default=datetime(2019, 1, 1, hour=22, minute=00))
+    single_limit = IntegerField(
+        validators=[validators.DataRequired()], default=8)
+    double_limit = IntegerField(
+        validators=[validators.DataRequired()], default=12)
     create_submit = SubmitField("Create")
-
 
 
 def fetch_groups(limit: int = None) -> Iterator:
@@ -52,11 +58,13 @@ def fetch_group(
     return group_entity
 
 
-def process_create_group(data:dict) ->  str:
+def process_create_group(data: dict) -> str:
     new_group = datastore.Entity(datastore_client.key("group"))
     local = pytz.timezone("US/Pacific")
-    start_time = local.localize(datetime.strptime(data['date']+" "+data['start_time'],'%Y-%m-%d %H:%M'))
-    end_time = local.localize(datetime.strptime(data['date']+" "+data['end_time'],'%Y-%m-%d %H:%M'))
+    start_time = local.localize(datetime.strptime(
+        data['date']+" "+data['start_time'], '%Y-%m-%d %H:%M'))
+    end_time = local.localize(datetime.strptime(
+        data['date']+" "+data['end_time'], '%Y-%m-%d %H:%M'))
     new_group.update(
         {
             "location": data['location'],
@@ -70,7 +78,7 @@ def process_create_group(data:dict) ->  str:
     print(new_group)
     datastore_client.put(new_group)
     return str(new_group.id)
-        
+
 
 def process_groups(groups: Iterator) -> Iterator[Dict]:
     clean_groups = get_clean_data(
@@ -114,13 +122,13 @@ def process_groups(groups: Iterator) -> Iterator[Dict]:
 
 
 def process_players(players: List, limit: int) -> Tuple[List, List]:
-    clean_players = get_clean_data(players, {("name", str), ("signup_time", datetime)})
+    clean_players = get_clean_data(
+        players, {("name", str), ("signup_time", datetime)})
     sorted_players = sorted(clean_players, key=itemgetter("signup_time"))
     if len(sorted_players) <= limit:
         return sorted_players, []
     else:
         return sorted_players[:limit], sorted_players[limit:]
-
 
 
 def get_clean_data(
@@ -171,13 +179,13 @@ def process_remove(group_id: str, player_type: str, player_name: str):
             group_entity[player_list_name] = new_players
             datastore_client.put(group_entity)
 
+
 @app.route("/", methods=["GET"])
 def root():
     groups = fetch_groups()
     processed_groups = list(process_groups(groups))
     edit_form = EditForm()
     return render_template("index.html", groups=processed_groups, edit_form=edit_form)
-
 
 
 @app.route("/<string:gid>", methods=["GET"])
@@ -203,19 +211,26 @@ def group_post(gid):
                 request.form["player_type"],
                 request.form["player_name"],
             )
-    return redirect("/"+gid,302)
+    return redirect("/"+gid, 302)
+
 
 @app.route("/groups/new", methods=["GET"])
 def create_group():
     create_form = GroupForm()
 
-    return render_template("create_group.html",form=create_form)
+    return render_template("create_group.html", form=create_form)
+
 
 @app.route("/groups", methods=["POST"])
 def create_group_post():
     print(request.form)
     gid = process_create_group(request.form)
-    return redirect("/"+gid,302)
+    return redirect("/"+gid, 302)
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.jpeg', mimetype='image/vnd.microsoft.icon')
 
 
 if __name__ == "__main__":
