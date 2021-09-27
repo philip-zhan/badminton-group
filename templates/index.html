@@ -1,18 +1,26 @@
-{% extends "layout.html" %} 
+{% extends "layout.html" %}
 {% block body %}
 
-<h1>Current events</h1>
+<div class="center">
+  {% for group in groups %}
 
-{% for group in groups %}
+  <a href="/groups/{{group['id']}}">
+    <div class="card">
+      <div class="card_line">
+        <b>{{ group["date"] }}</b>
+      </div>
+      <div class="card_line">{{ group["location"] }}</div>
+      <div class="card_line">{{ group["start_time"] }} - {{ group["end_time"]}}</div>
+    </div>
+  </a>
 
-<h2>{{ group["date"] }}</h2>
-<div>{{ group["location"] }}</div>
-<div>
-  <a href='/groups/{{ group["id"] }}'>{{ group["start_time"] }} - {{ group["end_time"]}}</a>
+  {% endfor %}
+
+  <a href="/groups/new" class="button" id="create_event">
+    <div>
+      <b>Create Event</b>
+    </div>
+  </a>
 </div>
-
-{% endfor %}
-
-<h1><a href="/groups/new">Create New Event</a></h1>
 
 {% endblock %}

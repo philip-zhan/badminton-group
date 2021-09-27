@@ -191,7 +191,7 @@ def process_remove(group_id: str, player_type: str, player_name: str) -> Optiona
 
 @app.route("/", methods=["GET"])
 def root():
-    groups = fetch_groups()
+    groups = fetch_groups(10)
     processed_groups = list(process_groups(groups))
     return render_template("index.html", groups=processed_groups)
 
