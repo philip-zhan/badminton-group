@@ -1,14 +1,10 @@
 body {
   font-family: "helvetica", sans-serif;
-  margin: 20px;
+  margin: 16px;
 }
 ul {
   list-style-type: none;
   padding-left: 0px;
-}
-ul li {
-  display: inline;
-  margin-right: 10px;
 }
 a {
   text-decoration: none;
@@ -16,8 +12,8 @@ a {
 }
 a.button {
   appearance: button;
-  padding: 20px;
-  border-radius: 5px;
+  padding: 16px;
+  border-radius: 4px;
   background-color: #eef;
 }
 .center {
@@ -25,18 +21,33 @@ a.button {
 }
 .card {
   background-color: #eee;
-  margin: 20px;
-  padding: 10px;
-  border-radius: 5px;
+  margin: 16px;
+  padding: 8px;
+  border-radius: 4px;
   text-align: center;
 }
 .card_line {
-  margin: 5px;
+  margin: 4px;
+}
+.container {
+  margin: 16px;
+}
+h5.waitlist {
+  margin: 12px;
+}
+.form_container {
+  text-align: center;
+  margin-top: 32px;
+  padding: 32px;
+  border-top: 1px solid #bbb;
+}
+#player_type li {
+  display: inline;
+  margin: 12px;
 }
 #player_name {
-  height: 25px;
-  width: 150px;
-  margin-bottom: 15px;
+  height: 24px;
+  width: 160px;
 }
 #add_submit {
   height: 30px;
@@ -45,9 +56,9 @@ a.button {
 #remove_submit {
   height: 30px;
   width: 70px;
-  margin-left: 15px;
+  margin-left: 20px;
 }
 #flashes {
   background-color: #faa;
-  padding: 10px;
+  padding: 8px;
 }
