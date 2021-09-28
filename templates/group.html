@@ -10,6 +10,7 @@
 </div>
 
 <div class="container">
+  {% if group["double_limit"] > 0 or group["double_waitlist"] %}
   <h4>Double ({{ group["double_limit"] }})</h4>
   <ol>
     {% for player in group["double_players"] %}
@@ -25,7 +26,9 @@
     {% endfor %}
   </ol>
   {% endif %}
+  {% endif %}
 
+  {% if group["single_limit"] > 0 or group["single_waitlist"] %}
   <h4>Single ({{ group["single_limit"] }})</h4>
   <ol>
     {% for player in group["single_players"] %}
@@ -40,6 +43,7 @@
     <li>{{ player["name"] }}</li>
     {% endfor %}
   </ol>
+  {% endif %}
   {% endif %}
 
   <div class="form_container">

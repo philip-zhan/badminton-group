@@ -9,13 +9,13 @@ from flask import Flask, render_template, request, flash
 from werkzeug.utils import redirect
 from wtforms import Form, StringField, SubmitField, RadioField, validators
 from wtforms.fields.html5 import TimeField, DateField, IntegerField
-from google.cloud import datastore
+from google.cloud.datastore import Client, Entity, Transaction
 
 
 PAGE_LIMIT = 10
 
 logger = logging.getLogger()
-datastore_client = datastore.Client("badminton-group", "groups")
+datastore_client = Client("badminton-group", "groups")
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(32)
 
@@ -49,19 +49,17 @@ class GroupForm(Form):
     create_submit = SubmitField("Create")
 
 
-def fetch_groups(limit: int = None) -> Iterator:
+def fetch_groups(limit: int = None) -> List[Entity]:
     query = datastore_client.query(kind="group")
     query.order = ["-start_time"]
     try:
-        return query.fetch(limit=limit)
+        return list(query.fetch(limit=limit))
     except Exception as e:
         logger.error(e, exc_info=True)
-        yield
+        return []
 
 
-def fetch_group(
-    group_id: str, transaction: datastore.Transaction = None
-) -> Optional[datastore.Entity]:
+def fetch_group(group_id: str, transaction: Transaction = None) -> Optional[Entity]:
     key = datastore_client.key("group", int(group_id))
     try:
         group_entity = datastore_client.get(key, transaction=transaction)
@@ -72,7 +70,7 @@ def fetch_group(
 
 
 def process_create_group(data: dict) -> Optional[str]:
-    new_group = datastore.Entity(datastore_client.key("group"))
+    new_group = Entity(datastore_client.key("group"))
     local = pytz.timezone("US/Pacific")
     start_time = local.localize(
         datetime.strptime(data["date"] + " " + data["start_time"], "%Y-%m-%d %H:%M")
@@ -99,7 +97,7 @@ def process_create_group(data: dict) -> Optional[str]:
         return None
 
 
-def process_groups(groups: Iterator) -> Iterator[Dict]:
+def process_groups(groups: Iterable) -> Iterator[Dict]:
     clean_groups = get_clean_data(
         groups,
         {
@@ -151,7 +149,7 @@ def process_players(players: Iterable, limit: int) -> Tuple[List, List]:
 
 def get_clean_data(
     data: Iterable, required_field_and_type: Set[Tuple[str, type]]
-) -> Iterator[datastore.Entity]:
+) -> Iterator[Entity]:
     for item in data:
         if all(
             field_name in item and isinstance(item[field_name], type_name)
@@ -221,7 +219,6 @@ def root():
 @app.route("/groups/new", methods=["GET"])
 def create_group():
     create_form = GroupForm()
-
     return render_template("create_group.html", form=create_form)
 
 
