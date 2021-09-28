@@ -5,14 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "env": {
-                "GOOGLE_APPLICATION_CREDENTIALS": "badminton-group-b8b954f5e8cf.json"
-            },
-            "name": "main",
+            "name": "Python: Flask",
             "type": "python",
             "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal"
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "main.py",
+                "FLASK_ENV": "development",
+                "GOOGLE_APPLICATION_CREDENTIALS": "badminton-group-b8b954f5e8cf.json"
+            },
+            "args": [
+                "run",
+                "--no-debugger"
+            ],
+            "jinja": true
         },
     ]
 }

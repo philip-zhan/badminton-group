@@ -7,7 +7,14 @@ from operator import itemgetter
 import pytz
 from flask import Flask, render_template, request, flash
 from werkzeug.utils import redirect
-from wtforms import Form, StringField, SubmitField, RadioField, validators
+from wtforms import (
+    Form,
+    StringField,
+    SubmitField,
+    RadioField,
+    PasswordField,
+    validators,
+)
 from wtforms.fields.html5 import TimeField, DateField, IntegerField
 from google.cloud.datastore import Client, Entity, Transaction
 
@@ -26,7 +33,8 @@ class EditForm(Form):
         choices=[("double", "Double"), ("single", "Single")],
         default="double",
     )
-    player_name = StringField(validators=[validators.DataRequired()])
+    player_name = StringField("Name", validators=[validators.DataRequired()])
+    player_pin = PasswordField("PIN", validators=[validators.DataRequired()])
     add_submit = SubmitField("Add")
     remove_submit = SubmitField("Remove")
 
@@ -139,7 +147,9 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
 
 
 def process_players(players: Iterable, limit: int) -> Tuple[List, List]:
-    clean_players = get_clean_data(players, {("name", str), ("signup_time", datetime)})
+    clean_players = get_clean_data(
+        players, {("name", str), ("pin", str), ("signup_time", datetime)}
+    )
     sorted_players = sorted(clean_players, key=itemgetter("signup_time"))
     if len(sorted_players) <= limit:
         return sorted_players, []
@@ -166,7 +176,9 @@ def get_player_list_name_by_type(player_type: str) -> Optional[str]:
     return None
 
 
-def process_add(group_id: str, player_type: str, player_name: str) -> Optional[str]:
+def process_add(
+    group_id: str, player_type: str, player_name: str, player_pin: str
+) -> Optional[str]:
     with datastore_client.transaction() as transaction:
         group_entity = fetch_group(group_id, transaction=transaction)
         if not group_entity:
@@ -178,7 +190,11 @@ def process_add(group_id: str, player_type: str, player_name: str) -> Optional[s
             return "Player with the same name already exist"
         else:
             group_entity[player_list_name].append(
-                {"name": player_name, "signup_time": datetime.utcnow()}
+                {
+                    "name": player_name,
+                    "pin": player_pin,
+                    "signup_time": datetime.utcnow(),
+                }
             )
             try:
                 datastore_client.put(group_entity)
@@ -187,17 +203,20 @@ def process_add(group_id: str, player_type: str, player_name: str) -> Optional[s
             return None
 
 
-def process_remove(group_id: str, player_type: str, player_name: str) -> Optional[str]:
+def process_remove(
+    group_id: str, player_type: str, player_name: str, player_pin: str
+) -> Optional[str]:
     with datastore_client.transaction() as transaction:
         group_entity = fetch_group(group_id, transaction=transaction)
         if not group_entity:
             return f"Can't find group with ID {group_id}"
         player_list_name = get_player_list_name_by_type(player_type)
-        new_players = [
-            x
-            for x in group_entity[player_list_name]
-            if x["name"].lower() != player_name.lower()
-        ]
+        new_players = []
+        for player in group_entity[player_list_name]:
+            if player["name"].lower() != player_name.lower():
+                new_players.append(player)
+            elif player["pin"] != player_pin:
+                return "Wrong PIN"
         if new_players == group_entity[player_list_name]:
             return "Can't find player with that name"
         else:
@@ -232,12 +251,16 @@ def group(gid):
 
 @app.route("/groups/<string:gid>", methods=["POST"])
 def group_post(gid):
-    if all(x in request.form for x in ["group_id", "player_type", "player_name"]):
+    if all(
+        x in request.form
+        for x in ["group_id", "player_type", "player_name", "player_pin"]
+    ):
         if "add_submit" in request.form:
             error_message = process_add(
                 request.form["group_id"],
                 request.form["player_type"],
                 request.form["player_name"],
+                request.form["player_pin"],
             )
             if error_message:
                 flash(error_message)
@@ -246,6 +269,7 @@ def group_post(gid):
                 request.form["group_id"],
                 request.form["player_type"],
                 request.form["player_name"],
+                request.form["player_pin"],
             )
             if error_message:
                 flash(error_message)
@@ -276,4 +300,4 @@ if __name__ == "__main__":
     # the "static" directory. See:
     # http://flask.pocoo.org/docs/1.0/quickstart/#static-files. Once deployed,
     # App Engine itself will serve those files as configured in app.yaml.
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=True)

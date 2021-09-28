@@ -48,7 +48,14 @@
 
   <div class="form_container">
     <form method="POST">
-      {{ edit_form.player_name }}
+      <div class="form_row">
+        {{ edit_form.player_name.label }}
+        {{ edit_form.player_name }}
+      </div>
+      <div class="form_row">
+        {{ edit_form.player_pin.label }}
+        {{ edit_form.player_pin }}
+      </div>
       {{ edit_form.player_type }}
       {{ edit_form.add_submit }}
       {{ edit_form.remove_submit }}
