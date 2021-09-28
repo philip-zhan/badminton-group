@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import send_from_directory
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 from datetime import datetime, date
@@ -11,6 +12,9 @@ from wtforms.fields.html5 import TimeField, DateField, IntegerField
 from google.cloud import datastore
 
 
+PAGE_LIMIT = 10
+
+logger = logging.getLogger()
 datastore_client = datastore.Client("badminton-group", "groups")
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(32)
@@ -48,18 +52,26 @@ class GroupForm(Form):
 def fetch_groups(limit: int = None) -> Iterator:
     query = datastore_client.query(kind="group")
     query.order = ["-start_time"]
-    return query.fetch(limit=limit)
+    try:
+        return query.fetch(limit=limit)
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        yield
 
 
 def fetch_group(
     group_id: str, transaction: datastore.Transaction = None
 ) -> Optional[datastore.Entity]:
     key = datastore_client.key("group", int(group_id))
-    group_entity = datastore_client.get(key, transaction=transaction)
-    return group_entity
+    try:
+        group_entity = datastore_client.get(key, transaction=transaction)
+        return group_entity
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        return None
 
 
-def process_create_group(data: dict) -> str:
+def process_create_group(data: dict) -> Optional[str]:
     new_group = datastore.Entity(datastore_client.key("group"))
     local = pytz.timezone("US/Pacific")
     start_time = local.localize(
@@ -79,8 +91,12 @@ def process_create_group(data: dict) -> str:
             "double_players": [],
         }
     )
-    datastore_client.put(new_group)
-    return str(new_group.id)
+    try:
+        datastore_client.put(new_group)
+        return str(new_group.id)
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        return None
 
 
 def process_groups(groups: Iterator) -> Iterator[Dict]:
@@ -166,7 +182,10 @@ def process_add(group_id: str, player_type: str, player_name: str) -> Optional[s
             group_entity[player_list_name].append(
                 {"name": player_name, "signup_time": datetime.utcnow()}
             )
-            datastore_client.put(group_entity)
+            try:
+                datastore_client.put(group_entity)
+            except Exception as e:
+                logger.error(e, exc_info=True)
             return None
 
 
@@ -185,13 +204,16 @@ def process_remove(group_id: str, player_type: str, player_name: str) -> Optiona
             return "Can't find player with that name"
         else:
             group_entity[player_list_name] = new_players
-            datastore_client.put(group_entity)
+            try:
+                datastore_client.put(group_entity)
+            except Exception as e:
+                logger.error(e, exc_info=True)
             return None
 
 
 @app.route("/", methods=["GET"])
 def root():
-    groups = fetch_groups(10)
+    groups = fetch_groups(PAGE_LIMIT)
     processed_groups = list(process_groups(groups))
     return render_template("index.html", groups=processed_groups)
 
