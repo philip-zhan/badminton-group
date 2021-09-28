@@ -1,25 +1,26 @@
-<!DOCTYPE html>
-<html>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <head>
-    <title>Badminton Groups</title>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-  </head>
-  <body>
+{% extends "layout.html" %}
+{% block body %}
 
-    <H1> Current events</H1>
+<div class="center">
+  {% for group in groups %}
 
-    {% for group in groups %}
+  <a href="/groups/{{group['id']}}">
+    <div class="card">
+      <div class="card_line">
+        <b>{{ group["date"] }}</b>
+      </div>
+      <div class="card_line">{{ group["location"] }}</div>
+      <div class="card_line">{{ group["start_time"] }} - {{ group["end_time"]}}</div>
+    </div>
+  </a>
 
-    <h2>{{ group["date"] }}</h2>
-    <div>{{ group["location"] }}</div>
-    <div><a href='/groups/{{ group["id"] }}''>{{ group["start_time"] }} - {{ group["end_time"]}}</a></div>
+  {% endfor %}
 
-    {% endfor %}
+  <a href="/groups/new" class="button" id="create_event">
+    <div>
+      <b>Create Event</b>
+    </div>
+  </a>
+</div>
 
-    <H1><a href='/groups/new'>Create New Event</a></H1>
-
-
-  </body>
-</html>
+{% endblock %}
