@@ -1,0 +1,25 @@
+{
+  "name": "bot",
+  "version": "0.0.1",
+  "description": "",
+  "engines": {
+    "node": ">=16"
+  },
+  "main": "main.ts",
+  "scripts": {
+    "start": "cross-env NODE_OPTIONS='--no-warnings --loader=ts-node/esm' node main.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "ts-node": "^10.2.1",
+    "wechaty": "^0.68.1",
+    "wechaty-puppet-padlocal": "^0.4.2",
+    "wechaty-puppet-wechat": "^0.30.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.3"
+  }
+}
