@@ -11,7 +11,7 @@
 
 <div class="container">
   {% if group["double_limit"] > 0 or group["double_waitlist"] %}
-  <h4>Double ({{ group["double_limit"] }})</h4>
+  <h4>Double - maximum of {{ group["double_limit"] }} players:</h4>
   <ol>
     {% for player in group["double_players"] %}
     <li>{{ player["name"] }}</li>
@@ -29,7 +29,7 @@
   {% endif %}
 
   {% if group["single_limit"] > 0 or group["single_waitlist"] %}
-  <h4>Single ({{ group["single_limit"] }})</h4>
+  <h4>Single - maximum of {{ group["single_limit"] }} players:</h4>
   <ol>
     {% for player in group["single_players"] %}
     <li>{{ player["name"] }}</li>
@@ -46,8 +46,12 @@
   {% endif %}
   {% endif %}
 
+  {% if group["can_signup"] %}
+
   <div class="form_container">
     <form method="POST">
+      Sign up for: {{ edit_form.player_type }}
+      <br>
       <div class="form_row">
         {{ edit_form.player_name.label }}
         {{ edit_form.player_name }}
@@ -56,12 +60,19 @@
         {{ edit_form.player_pin.label }}
         {{ edit_form.player_pin }}
       </div>
-      {{ edit_form.player_type }}
       {{ edit_form.add_submit }}
-      {{ edit_form.remove_submit }}
+      {% if group["can_retreat"] %}
+        {{ edit_form.remove_submit }}
+      {% endif %}
       <input type="hidden" name="group_id" value="{{group['id']}}" />
     </form>
   </div>
+  {% endif %}
 </div>
 
+<div class="card">
+  <div class="card_line">
+    <b>{{ group["description"] }}</b>
+  </div>
+</div>
 {% endblock %}

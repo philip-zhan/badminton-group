@@ -15,7 +15,8 @@ from wtforms import (
     PasswordField,
     validators,
 )
-from wtforms.fields.html5 import TimeField, DateField, IntegerField
+from wtforms.widgets import TextArea
+from wtforms.fields.html5 import TimeField, DateField, IntegerField, DateTimeLocalField
 from google.cloud.datastore import Client, Entity, Transaction
 
 
@@ -29,18 +30,20 @@ app.config["SECRET_KEY"] = os.urandom(32)
 
 class EditForm(Form):
     player_type = RadioField(
+        "Sign up:",
         validators=[validators.DataRequired()],
         choices=[("double", "Double"), ("single", "Single")],
         default="double",
     )
-    player_name = StringField("Name", validators=[validators.DataRequired()])
-    player_pin = PasswordField("PIN", validators=[validators.DataRequired()])
+    player_name = StringField("Name:", validators=[validators.DataRequired()])
+    player_pin = PasswordField("PIN:", validators=[validators.DataRequired()])
     add_submit = SubmitField("Add")
     remove_submit = SubmitField("Remove")
 
 
 class GroupForm(Form):
     location = StringField(validators=[validators.DataRequired()])
+    description = StringField(u'Text', widget=TextArea())
     date = DateField(validators=[validators.DataRequired()], default=date.today)
     start_time = TimeField(
         validators=[validators.DataRequired()],
@@ -55,6 +58,10 @@ class GroupForm(Form):
     single_limit = IntegerField(validators=[validators.DataRequired()], default=8)
     double_limit = IntegerField(validators=[validators.DataRequired()], default=12)
     create_submit = SubmitField("Create")
+    retreat_deadline = DateTimeLocalField('Retreat deadline',
+        default=datetime.now(),
+        format='%Y-%m-%dT%H:%M',
+        validators=[validators.DataRequired()])
 
 
 def fetch_groups(limit: int = None) -> List[Entity]:
@@ -86,8 +93,13 @@ def process_create_group(data: dict) -> Optional[str]:
     end_time = local.localize(
         datetime.strptime(data["date"] + " " + data["end_time"], "%Y-%m-%d %H:%M")
     )
+    retreat_deadline = local.localize(
+        datetime.strptime(data["retreat_deadline"], "%Y-%m-%dT%H:%M")
+    )
     new_group.update(
         {
+            "description": data["description"],
+            "retreat_deadline": retreat_deadline,
             "location": data["location"],
             "start_time": start_time,
             "end_time": end_time,
@@ -111,11 +123,14 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
         {
             ("location", str),
             ("start_time", datetime),
+            ("retreat_deadline", datetime),
             ("end_time", datetime),
             ("single_limit", int),
             ("double_limit", int),
             ("single_players", list),
             ("double_players", list),
+            ("description", str),
+
         },
     )
     for group in clean_groups:
@@ -125,12 +140,21 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
         end_time_local: datetime = group["end_time"].astimezone(
             pytz.timezone("US/Pacific")
         )
+        retreat_time_local: datetime = group["retreat_deadline"].astimezone(
+            pytz.timezone("US/Pacific")
+        )
         single_players, single_waitlist = process_players(
             group["single_players"], group["single_limit"]
         )
         double_players, double_waitlist = process_players(
             group["double_players"], group["double_limit"]
         )
+        now_local = datetime.now().astimezone(
+            pytz.timezone("US/Pacific")
+        )
+        can_signup:bool = (start_time_local > now_local)
+        can_retreat:bool = (retreat_time_local > now_local)
+
         yield {
             "id": group.id,
             "location": group["location"],
@@ -139,10 +163,13 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
             "end_time": end_time_local.strftime("%-I:%M %p"),
             "single_limit": group["single_limit"],
             "double_limit": group["double_limit"],
+            "description": group["description"],
             "single_players": single_players,
             "single_waitlist": single_waitlist,
             "double_players": double_players,
             "double_waitlist": double_waitlist,
+            "can_signup":can_signup,
+            "can_retreat":can_retreat,
         }
 
 
@@ -244,10 +271,23 @@ def create_group():
 @app.route("/groups/<string:gid>", methods=["GET"])
 def group(gid):
     groups = [fetch_group(gid)]
-    processed_groups = list(process_groups(groups))
-    edit_form = EditForm()
-    return render_template("group.html", group=processed_groups[0], edit_form=edit_form)
-
+    print(groups)
+    try:
+        processed_groups = list(process_groups(groups))
+        group=processed_groups[0]
+        edit_form = EditForm()
+        if group['single_limit']==0:
+            edit_form.player_type.choices=[('double','Double')]
+            edit_form.player_type.default='double'
+            edit_form.process()
+        elif group['double_limit']==0:  
+            edit_form.player_type.choices=[('single','Single')]
+            edit_form.player_type.default='single'
+            edit_form.process()
+        return render_template("group.html",group=group , edit_form=edit_form)
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        return render_template('404.html'), 404
 
 @app.route("/groups/<string:gid>", methods=["POST"])
 def group_post(gid):
