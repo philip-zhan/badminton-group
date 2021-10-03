@@ -1,78 +1,117 @@
 {% extends "layout.html" %}
 {% block body %}
 
-<div class="card">
-  <div class="card_line">
-    <b>{{ group["date"] }}</b>
+<div class="accordion" id="descriptionData">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingOne">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"
+        aria-expanded="false" aria-controls="collapseOne">
+        &#x1F449; {{ group["date"] }} {{ group["start_time"] }}-{{ group["end_time"]}} &#x1F448;
+      </button>
+    </h2>
+    <div id="collapseOne" class="accordion-collapse collapse hide" aria-labelledby="headingOne"
+      data-bs-parent="#accordionExample">
+      <div class="accordion-body">
+        <H6>Address: {{ group["location"] }} </H6>
+        <br>
+        {{ group["description"] }}
+      </div>
+    </div>
   </div>
-  <div class="card_line">{{ group["location"] }}</div>
-  <div class="card_line">{{ group["start_time"] }} - {{ group["end_time"]}}</div>
 </div>
-
-<div class="container">
-  {% if group["double_limit"] > 0 or group["double_waitlist"] %}
-  <h4>Double - maximum of {{ group["double_limit"] }} players:</h4>
-  <ol>
+{% if group["double_limit"] > 0 or group["double_waitlist"] %}
+<div class="card">
+  <div class="card-header">Double - maximum of {{ group["double_limit"] }} players</div>
+  <ul class="list-group list-group-flush">
     {% for player in group["double_players"] %}
-    <li>{{ player["name"] }}</li>
+    <li class="list-group-item">{{ player["name"] }}</li>
     {% endfor %}
-  </ol>
-
+  </ul>
   {% if group["double_waitlist"] %}
-  <h5 class="waitlist">Waitlist</h5>
-  <ol>
+  <div class="card-header">Double waitlist</div>
+  <ul class="list-group list-group-flush">
     {% for player in group["double_waitlist"] %}
-    <li>{{ player["name"] }}</li>
+    <li class="list-group-item">{{ player["name"] }}</li>
     {% endfor %}
-  </ol>
-  {% endif %}
-  {% endif %}
-
-  {% if group["single_limit"] > 0 or group["single_waitlist"] %}
-  <h4>Single - maximum of {{ group["single_limit"] }} players:</h4>
-  <ol>
-    {% for player in group["single_players"] %}
-    <li>{{ player["name"] }}</li>
-    {% endfor %}
-  </ol>
-
-  {% if group["single_waitlist"] %}
-  <h5 class="waitlist">Waitlist</h5>
-  <ol>
-    {% for player in group["single_waitlist"] %}
-    <li>{{ player["name"] }}</li>
-    {% endfor %}
-  </ol>
-  {% endif %}
-  {% endif %}
-
-  {% if group["can_signup"] %}
-
-  <div class="form_container">
-    <form method="POST">
-      Sign up for: {{ edit_form.player_type }}
-      <br>
-      <div class="form_row">
-        {{ edit_form.player_name.label }}
-        {{ edit_form.player_name }}
-      </div>
-      <div class="form_row">
-        {{ edit_form.player_pin.label }}
-        {{ edit_form.player_pin }}
-      </div>
-      {{ edit_form.add_submit }}
-      {% if group["can_retreat"] %}
-        {{ edit_form.remove_submit }}
-      {% endif %}
-      <input type="hidden" name="group_id" value="{{group['id']}}" />
-    </form>
-  </div>
+  </ul>
   {% endif %}
 </div>
+{% endif %}
 
+{% if group["single_limit"] > 0 or group["single_waitlist"] %}
 <div class="card">
-  <div class="card_line">
-    <b>{{ group["description"] }}</b>
-  </div>
+  <div class="card-header">Single - maximum of {{ group["single_limit"] }} players</div>
+  <ul class="list-group list-group-flush">
+    {% for player in group["single_players"] %}
+    <li class="list-group-item">{{ player["name"] }}</li>
+    {% endfor %}
+  </ul>
+  {% if group["single_waitlist"] %}
+  <div class="card-header">Single waitlist</div>
+  <ul class="list-group list-group-flush">
+    {% for player in group["single_waitlist"] %}
+    <li class="list-group-item">{{ player["name"] }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </div>
+{% endif %}
+<div class='foot_padding'> </div>
+
+{% if group["can_signup"] %}
+<script>
+  const toggleSingle = () => {
+    document.getElementById("dropdownMenuButton1").innerText="Single";
+    document.getElementById("playTypeInput").value="single";
+  }
+
+  const toggleDouble = () => {
+    document.getElementById("dropdownMenuButton1").innerText="Double";
+    document.getElementById("playTypeInput").value="double";
+  }
+
+</script>
+
+<footer class="fixed-bottom">
+  <form method="POST">
+    <div class="input-group mb-3" style="margin-bottom: 5px !important;">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Name</span>
+      </div>
+      {{ edit_form.player_name(class_="form-control", placeholder="Your name")}}
+    </div>
+    <div class="input-group mb-3" style="margin-bottom: 5px !important;">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">PIN</span>
+      </div>
+      {{ edit_form.player_pin(class_="form-control", placeholder="insert PIN")}}
+      <div class="dropdown" style="margin-left: 5px;">
+        <button class="btn btn-primary dropdown-toggle" 
+        style="width: 92px;"
+        type="button" 
+        {% if group['player_types_disabled'] %} disabled {%endif%}
+         id="dropdownMenuButton1" 
+         data-bs-toggle="dropdown" 
+         aria-expanded="false">
+          {{group.default_type.text}}
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+          <li><a class="dropdown-item" href="#" onclick="toggleSingle();">Single </a></li>
+          <li><a class="dropdown-item" href="#" onclick="toggleDouble();">Double</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <input type="hidden" id='playTypeInput' name="player_type" value="{{group.default_type.value}}" />
+    <div class="btn-group" style="width:100%; margin-bottom: 5px !important;" role="group">
+      {{ edit_form.add_submit(class_="btn btn-primary ") }}
+      {% if group["can_retreat"] %}
+      {{ edit_form.remove_submit(class_="btn btn-outline-primary ") }}
+      {% endif %}
+    </div>
+    <input type="hidden" name="group_id" value="{{group['id']}}" />
+  </form>
+</footer>
+{% endif %}
+
 {% endblock %}
