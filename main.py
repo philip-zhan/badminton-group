@@ -57,11 +57,12 @@ class GroupForm(Form):
     )
     single_limit = IntegerField(validators=[validators.DataRequired()], default=8)
     double_limit = IntegerField(validators=[validators.DataRequired()], default=12)
-    create_submit = SubmitField("Create")
     retreat_deadline = DateTimeLocalField('Retreat deadline',
         default=datetime.now(),
         format='%Y-%m-%dT%H:%M',
         validators=[validators.DataRequired()])
+    pin = StringField(validators=[validators.DataRequired()])
+    create_submit = SubmitField("Create")
 
 
 def fetch_groups(limit: int = None) -> List[Entity]:
@@ -105,6 +106,7 @@ def process_create_group(data: dict) -> Optional[str]:
             "end_time": end_time,
             "single_limit": int(data["single_limit"]),
             "double_limit": int(data["double_limit"]),
+            "pin":  data["pin"],
             "single_players": [],
             "double_players": [],
         }
@@ -211,6 +213,7 @@ def process_add(
         if not group_entity:
             return f"Can't find group with ID {group_id}"
         player_list_name = get_player_list_name_by_type(player_type)
+        player_name = player_name.strip()
         if player_name.lower() in {
             x["name"].lower() for x in group_entity[player_list_name]
         }:
@@ -229,30 +232,30 @@ def process_add(
                 logger.error(e, exc_info=True)
             return None
 
-
 def process_remove(
     group_id: str, player_type: str, player_name: str, player_pin: str
 ) -> Optional[str]:
+    player_name = player_name.strip()
     with datastore_client.transaction() as transaction:
         group_entity = fetch_group(group_id, transaction=transaction)
         if not group_entity:
             return f"Can't find group with ID {group_id}"
         player_list_name = get_player_list_name_by_type(player_type)
         new_players = []
-        for player in group_entity[player_list_name]:
+        for idx in range(len(group_entity[player_list_name])):
+            player = group_entity[player_list_name][idx]
             if player["name"].lower() != player_name.lower():
-                new_players.append(player)
-            elif player["pin"] != player_pin:
+                continue
+            if player_pin in [group_entity['pin'], player['pin']]:
+                group_entity[player_list_name].pop(idx)
+                try:
+                    datastore_client.put(group_entity)
+                except Exception as e:
+                    logger.error(e, exc_info=True)
+                return None
+            else:
                 return "Wrong PIN"
-        if new_players == group_entity[player_list_name]:
-            return "Can't find player with that name"
-        else:
-            group_entity[player_list_name] = new_players
-            try:
-                datastore_client.put(group_entity)
-            except Exception as e:
-                logger.error(e, exc_info=True)
-            return None
+        return "Can't find player with that name"
 
 
 @app.route("/", methods=["GET"])
