@@ -21,17 +21,17 @@
 </div>
 {% if group["double_limit"] > 0 or group["double_waitlist"] %}
 <div class="card">
-  <div class="card-header">Double - maximum of {{ group["double_limit"] }} players</div>
+  <div class="card-header">Double players: {{len(group["double_players"])}}/{{ group["double_limit"] }} </div>
   <ul class="list-group list-group-flush">
-    {% for player in group["double_players"] %}
-    <li class="list-group-item">{{ player["name"] }}</li>
+    {% for idx, player in enumerate(group["double_players"]) %}
+    <li class="list-group-item">{{idx}}. {{ player["name"] }}</li>
     {% endfor %}
   </ul>
   {% if group["double_waitlist"] %}
   <div class="card-header">Double waitlist</div>
   <ul class="list-group list-group-flush">
-    {% for player in group["double_waitlist"] %}
-    <li class="list-group-item">{{ player["name"] }}</li>
+    {% for idx, player in enumerate(group["double_waitlist"]) %}
+    <li class="list-group-item">{{idx}}. {{ player["name"] }}</li>
     {% endfor %}
   </ul>
   {% endif %}
@@ -40,17 +40,17 @@
 
 {% if group["single_limit"] > 0 or group["single_waitlist"] %}
 <div class="card">
-  <div class="card-header">Single - maximum of {{ group["single_limit"] }} players</div>
+  <div class="card-header">Single players: {{len(group["single_players"])}}/{{ group["single_limit"] }} </div>
   <ul class="list-group list-group-flush">
-    {% for player in group["single_players"] %}
-    <li class="list-group-item">{{ player["name"] }}</li>
+    {% for idx, player in enumerate(group["single_players"]) %}
+    <li class="list-group-item">{{idx}}. {{ player["name"] }}</li>
     {% endfor %}
   </ul>
   {% if group["single_waitlist"] %}
   <div class="card-header">Single waitlist</div>
   <ul class="list-group list-group-flush">
-    {% for player in group["single_waitlist"] %}
-    <li class="list-group-item">{{ player["name"] }}</li>
+    {% for idx, player in enumerate(group["single_waitlist"]) %}
+    <li class="list-group-item">{{idx}}. {{ player["name"] }}</li>
     {% endfor %}
   </ul>
   {% endif %}
