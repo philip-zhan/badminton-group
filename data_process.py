@@ -1,13 +1,12 @@
-import os
-import logging
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
-from datetime import datetime, date
+from datetime import datetime
 from operator import itemgetter
 import pytz
 from google.cloud.datastore import Client, Entity, Transaction
-
+import logging
 
 datastore_client = Client("badminton-group", "groups")
+logger = logging.getLogger()
 
 
 def fetch_groups(limit: int = None) -> List[Entity]:
@@ -51,7 +50,7 @@ def process_create_group(data: dict) -> Optional[str]:
             "end_time": end_time,
             "single_limit": int(data["single_limit"]),
             "double_limit": int(data["double_limit"]),
-            "pin":  data["pin"],
+            "pin": data["pin"],
             "single_players": [],
             "double_players": [],
         }
@@ -77,7 +76,6 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
             ("single_players", list),
             ("double_players", list),
             ("description", str),
-
         },
     )
     for group in clean_groups:
@@ -96,11 +94,9 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
         double_players, double_waitlist = process_players(
             group["double_players"], group["double_limit"]
         )
-        now_local = datetime.now().astimezone(
-            pytz.timezone("US/Pacific")
-        )
-        can_signup:bool = (start_time_local > now_local)
-        can_retreat:bool = (retreat_time_local > now_local)
+        now_local = datetime.now().astimezone(pytz.timezone("US/Pacific"))
+        can_signup: bool = start_time_local > now_local
+        can_retreat: bool = retreat_time_local > now_local
 
         yield {
             "id": group.id,
@@ -115,8 +111,8 @@ def process_groups(groups: Iterable) -> Iterator[Dict]:
             "single_waitlist": single_waitlist,
             "double_players": double_players,
             "double_waitlist": double_waitlist,
-            "can_signup":can_signup,
-            "can_retreat":can_retreat,
+            "can_signup": can_signup,
+            "can_retreat": can_retreat,
         }
 
 
@@ -177,6 +173,7 @@ def process_add(
                 logger.error(e, exc_info=True)
             return None
 
+
 def process_remove(
     group_id: str, player_type: str, player_name: str, player_pin: str
 ) -> Optional[str]:
@@ -186,12 +183,11 @@ def process_remove(
         if not group_entity:
             return f"Can't find group with ID {group_id}"
         player_list_name = get_player_list_name_by_type(player_type)
-        new_players = []
         for idx in range(len(group_entity[player_list_name])):
             player = group_entity[player_list_name][idx]
             if player["name"].lower() != player_name.lower():
                 continue
-            if player_pin in [group_entity['pin'], player['pin']]:
+            if player_pin in [group_entity["pin"], player["pin"]]:
                 group_entity[player_list_name].pop(idx)
                 try:
                     datastore_client.put(group_entity)

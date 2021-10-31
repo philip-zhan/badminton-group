@@ -1,22 +1,21 @@
 body {
   font-family: "helvetica", sans-serif;
-   width:100%
+  width: 100%;
 }
 
-footer.fixed-bottom{
+footer.fixed-bottom {
   position: fixed;
   height: 138px;
-  background: #FEFEFE ;
+  background: #fefefe;
   border-top: 1px solid rgb(206, 212, 218);
   bottom: 0;
   padding: 5px;
   width: 100%;
 }
 
-.foot_padding{
-  height: 160px !important ;
+.foot_padding {
+  height: 160px;
   width: 100%;
-
 }
 /*
 ul {
@@ -81,4 +80,4 @@ h5.waitlist {
 #flashes {
   background-color: #faa;
   padding: 8px;
-} 
+}

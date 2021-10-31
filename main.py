@@ -2,7 +2,6 @@ import os
 import logging
 from flask import send_from_directory
 from datetime import datetime, date
-from operator import itemgetter
 from flask import Flask, render_template, request, flash
 from werkzeug.utils import redirect
 from wtforms import (
@@ -15,8 +14,14 @@ from wtforms import (
 )
 from wtforms.widgets import TextArea
 from wtforms.fields.html5 import TimeField, DateField, IntegerField, DateTimeLocalField
-from data_process import fetch_groups,process_groups,fetch_group,process_add,process_players,process_create_group,process_remove
-
+from data_process import (
+    fetch_groups,
+    process_groups,
+    fetch_group,
+    process_add,
+    process_create_group,
+    process_remove,
+)
 
 PAGE_LIMIT = 10
 
@@ -32,15 +37,15 @@ class EditForm(Form):
         choices=[("double", "Double"), ("single", "Single")],
         default="double",
     )
-    player_name = StringField( validators=[validators.DataRequired()])
-    player_pin = PasswordField( validators=[validators.DataRequired()])
+    player_name = StringField(validators=[validators.DataRequired()])
+    player_pin = PasswordField(validators=[validators.DataRequired()])
     add_submit = SubmitField("Add")
     remove_submit = SubmitField("Remove")
 
 
 class GroupForm(Form):
     location = StringField(validators=[validators.DataRequired()])
-    description = StringField(u'Text', widget=TextArea())
+    description = StringField(u"Text", widget=TextArea())
     date = DateField(validators=[validators.DataRequired()], default=date.today)
     start_time = TimeField(
         validators=[validators.DataRequired()],
@@ -54,13 +59,14 @@ class GroupForm(Form):
     )
     single_limit = IntegerField(validators=[validators.DataRequired()], default=8)
     double_limit = IntegerField(validators=[validators.DataRequired()], default=12)
-    retreat_deadline = DateTimeLocalField('Retreat deadline',
+    retreat_deadline = DateTimeLocalField(
+        "Retreat deadline",
         default=datetime.now(),
-        format='%Y-%m-%dT%H:%M',
-        validators=[validators.DataRequired()])
+        format="%Y-%m-%dT%H:%M",
+        validators=[validators.DataRequired()],
+    )
     pin = StringField(validators=[validators.DataRequired()])
     create_submit = SubmitField("Create")
-
 
 
 @app.route("/", methods=["GET"])
@@ -79,26 +85,26 @@ def create_group():
 @app.route("/groups/<string:gid>", methods=["GET"])
 def group(gid):
     groups = [fetch_group(gid)]
-    print(groups)
     try:
         processed_groups = list(process_groups(groups))
-        group=processed_groups[0]
+        group = processed_groups[0]
         edit_form = EditForm()
-        if group['single_limit']==0:
-            group['player_types_disabled']=True
-            group['default_type']={"value":'double',"text":'Double'}
+        if group["single_limit"] == 0:
+            group["player_types_disabled"] = True
+            group["default_type"] = {"value": "double", "text": "Double"}
 
-        elif group['double_limit']==0:  
-            group['player_types_disabled']=True
-            group['default_type']={"value":'single',"text":'Single'}
+        elif group["double_limit"] == 0:
+            group["player_types_disabled"] = True
+            group["default_type"] = {"value": "single", "text": "Single"}
         else:
-            group['player_types_disabled']=False
-            group['default_type']={"value":'single',"text":'Single'}
+            group["player_types_disabled"] = False
+            group["default_type"] = {"value": "single", "text": "Single"}
 
-        return render_template("group.html",group=group , edit_form=edit_form)
+        return render_template("group.html", group=group, edit_form=edit_form)
     except Exception as e:
         logger.error(e, exc_info=True)
-        return render_template('404.html'), 404
+        return render_template("404.html"), 404
+
 
 @app.route("/groups/<string:gid>", methods=["POST"])
 def group_post(gid):
