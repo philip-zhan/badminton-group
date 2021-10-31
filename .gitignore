@@ -2,3 +2,4 @@ __pycache__
 badminton-group-b8b954f5e8cf.json
 .DS_Store
 .mypy_cache
+logs/
